@@ -29,11 +29,16 @@
 Account groups, ledgers and vouchers, posted by double entry, with trial balance, day book, P&L and
 balance sheet. Exact to the paisa, ACID on MongoDB and PostgreSQL.
 
-![status](https://img.shields.io/badge/status-in%20development-E9A23B) ![money](https://img.shields.io/badge/money-integer%20paise-14264A)
+![version](https://img.shields.io/badge/version-0.1.0-E9A23B) ![checks](https://img.shields.io/badge/checks-85-14264A) ![money](https://img.shields.io/badge/money-integer%20paise-14264A)
 
 </div>
 
-> 🚧 **0.1.0, not released yet.** The package name is confirmed before the first release.
+> **0.1.0** on GitHub Packages. finance-kit already posts through it.
+
+```bash
+# .npmrc: @mgpl-diagnostics:registry=https://npm.pkg.github.com (a token with read:packages)
+npm install @mgpl-diagnostics/tally-kit @mgpl-diagnostics/db-kit
+```
 
 ## What it does
 
@@ -120,10 +125,10 @@ All rights reserved. See [LICENSE](LICENSE).
 posting and the books reports. The approach is Tally-like (the concepts), but it is our software. We
 do **not** use or integrate with Tally software: no Tally XML, no import, no export.
 
-> **Status:** 0.1.0, not released yet. db-kit 1.1.0's `accounting.ts` and `reports.ts` are ported with
+> **Status:** 0.1.0, published to GitHub Packages. db-kit 1.1.0's `accounting.ts` and `reports.ts` are ported with
 > identical behaviour (proved by `npm test` on MongoDB and PostgreSQL); `tallyPostingHook` is the
-> PostingHook for db-kit. Next: finance-kit's `src/posting.ts` switches to tally-kit (step 4 below).
-> The package name must be confirmed with the owner before the first release (rule 7).
+> PostingHook for db-kit. finance-kit's `src/posting.ts` posts through tally-kit (step 4 below, done).
+> Next: deprecate db-kit's copy of the engine (step 5).
 
 ## Map
 
@@ -215,7 +220,8 @@ npm run llms      # regenerate llms-full.txt (CI fails when it is stale)
 - squash merge, linear history;
 - 1 code-owner review (`@BackStacked`);
 - the `ci` check is required;
-- release tags `v*` are admin-only.
+- release tags `v*` are admin-only. `publish.yml` publishes on a `v*` tag, or when the code owner runs
+  it by hand on `main` (the version in package.json). Bump the version in a PR first.
 
 Rules are applied from `mgpl-diagnostics/.github` (`scripts/protect-repos.mjs`).
 
@@ -229,7 +235,7 @@ Rules are applied from `mgpl-diagnostics/.github` (`scripts/protect-repos.mjs`).
 > The MGPL Diagnostics accounting engine: account groups, ledgers, vouchers, double-entry posting, and books reports (trial balance, ledger statement, day book, cash/bank books, P&L, balance sheet). A library on db-kit's repositories (MongoDB or PostgreSQL, ACID, integer paise). It implements db-kit's PostingHook and serves finance-kit. Our own software, Tally-like in concepts only, with no Tally import or export.
 
 Key facts for agents:
-- Status: 0.1.0, unreleased. A port of db-kit 1.1.0's accounting.ts / reports.ts with identical behaviour (same names, signatures, voucher numbers, entries, errors, report figures); npm test proves it on MongoDB and PostgreSQL.
+- Status: 0.1.0 on GitHub Packages; finance-kit posts through it. A port of db-kit 1.1.0's accounting.ts / reports.ts with identical behaviour (same names, signatures, voucher numbers, entries, errors, report figures); npm test proves it on MongoDB and PostgreSQL.
 - `createDb({ ..., posting: tallyPostingHook })` makes db-kit's billing post through tally-kit.
 - Calls: seedChartOfAccounts, postVoucher, cancelVoucher (both refuse a locked period: PeriodLockedError 409), assertBalanced (UnbalancedVoucherError 422), postInvoice, postPayment, unpostInvoice; reports: ledgerBalance, ledgerStatement, cashBook, trialBalance, profitAndLoss, balanceSheet, dayBook, outstandingReceivables, gstSummary.
 - Peer dependency: @mgpl-diagnostics/db-kit (>= 1.1.0, which has PostingHook and periodLocks). Types, errors and financialYear come from db-kit; src/ must not import db-kit's accounting functions.

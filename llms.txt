@@ -3,7 +3,7 @@
 > The MGPL Diagnostics accounting engine: account groups, ledgers, vouchers, double-entry posting, and books reports (trial balance, ledger statement, day book, cash/bank books, P&L, balance sheet). A library on db-kit's repositories (MongoDB or PostgreSQL, ACID, integer paise). It implements db-kit's PostingHook and serves finance-kit. Our own software, Tally-like in concepts only, with no Tally import or export.
 
 Key facts for agents:
-- Status: 0.1.0, unreleased. A port of db-kit 1.1.0's accounting.ts / reports.ts with identical behaviour (same names, signatures, voucher numbers, entries, errors, report figures); npm test proves it on MongoDB and PostgreSQL.
+- Status: 0.1.0 on GitHub Packages; finance-kit posts through it. A port of db-kit 1.1.0's accounting.ts / reports.ts with identical behaviour (same names, signatures, voucher numbers, entries, errors, report figures); npm test proves it on MongoDB and PostgreSQL.
 - `createDb({ ..., posting: tallyPostingHook })` makes db-kit's billing post through tally-kit.
 - Calls: seedChartOfAccounts, postVoucher, cancelVoucher (both refuse a locked period: PeriodLockedError 409), assertBalanced (UnbalancedVoucherError 422), postInvoice, postPayment, unpostInvoice; reports: ledgerBalance, ledgerStatement, cashBook, trialBalance, profitAndLoss, balanceSheet, dayBook, outstandingReceivables, gstSummary.
 - Peer dependency: @mgpl-diagnostics/db-kit (>= 1.1.0, which has PostingHook and periodLocks). Types, errors and financialYear come from db-kit; src/ must not import db-kit's accounting functions.

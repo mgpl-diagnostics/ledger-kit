@@ -6,11 +6,16 @@
 Account groups, ledgers and vouchers, posted by double entry, with trial balance, day book, P&L and
 balance sheet. Exact to the paisa, ACID on MongoDB and PostgreSQL.
 
-![status](https://img.shields.io/badge/status-in%20development-E9A23B) ![money](https://img.shields.io/badge/money-integer%20paise-14264A)
+![version](https://img.shields.io/badge/version-0.1.0-E9A23B) ![checks](https://img.shields.io/badge/checks-85-14264A) ![money](https://img.shields.io/badge/money-integer%20paise-14264A)
 
 </div>
 
-> 🚧 **0.1.0, not released yet.** The package name is confirmed before the first release.
+> **0.1.0** on GitHub Packages. finance-kit already posts through it.
+
+```bash
+# .npmrc: @mgpl-diagnostics:registry=https://npm.pkg.github.com (a token with read:packages)
+npm install @mgpl-diagnostics/tally-kit @mgpl-diagnostics/db-kit
+```
 
 ## What it does
 

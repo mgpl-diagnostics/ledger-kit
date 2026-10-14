@@ -3,6 +3,8 @@ name: Publish to GitHub Packages
 on:
   push:
     tags: ["v*"]
+  # the owner can also publish main's package.json version by hand (Actions → Run workflow)
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,6 +12,8 @@ permissions:
 
 jobs:
   publish:
+    # tags are admin-only; a manual run is limited to main and to the code owner
+    if: github.event_name == 'push' || (github.ref == 'refs/heads/main' && github.actor == 'BackStacked')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -19,6 +23,7 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: "@mgpl-diagnostics"
       - name: Tag must match package.json version
+        if: github.event_name == 'push'
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
       # installs dependencies (incl. @mgpl-diagnostics/* peers from GitHub Packages) and builds dist/ via "prepare"
       - run: npm install --no-package-lock
