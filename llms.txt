@@ -1,0 +1,18 @@
+# @mgpl-diagnostics/tally-kit
+
+> The MGPL Diagnostics accounting engine (in development): account groups, ledgers, vouchers, double-entry posting, and books reports (trial balance, ledger statement, day book, cash/bank books, P&L, balance sheet). A library on db-kit's repositories (MongoDB or PostgreSQL, ACID, integer paise). It implements db-kit's PostingHook and serves finance-kit. Our own software, Tally-like in concepts only, with no Tally import or export.
+
+Key facts for agents:
+- Status: scaffolded, no code yet. Scope, migration plan and rules are in AGENTS.md.
+- Peer dependency: @mgpl-diagnostics/db-kit (>= 1.1.0, which has PostingHook and periodLocks).
+- Behaviour must match db-kit's current accounting.ts / reports.ts exactly before replacing them.
+
+## Docs
+
+- [README](README.md): what it will do
+- [AGENTS.md](AGENTS.md): scope, migration plan, rules
+
+## Optional
+
+- [db-kit](https://github.com/mgpl-diagnostics/db-kit)
+- [finance-kit](https://github.com/mgpl-diagnostics/finance-kit)
