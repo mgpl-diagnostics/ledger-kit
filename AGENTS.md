@@ -4,9 +4,32 @@
 posting and the books reports. The approach is Tally-like (the concepts), but it is our software. We
 do **not** use or integrate with Tally software: no Tally XML, no import, no export.
 
-> **Status:** repository scaffolded, no code yet. The building agent starts here. Read the org-wide
-> context first: `CONTEXT.md` from the MGPL context bundle, plus the `AGENTS.md` files of db-kit and
-> finance-kit.
+> **Status:** 0.1.0, not released yet. db-kit 1.1.0's `accounting.ts` and `reports.ts` are ported with
+> identical behaviour (proved by `npm test` on MongoDB and PostgreSQL); `tallyPostingHook` is the
+> PostingHook for db-kit. Next: finance-kit's `src/posting.ts` switches to tally-kit (step 4 below).
+> The package name must be confirmed with the owner before the first release (rule 7).
+
+## Map
+
+```
+src/chart.ts       TALLY_GROUPS (28), DEFAULT_LEDGERS, seedChartOfAccounts
+src/vouchers.ts    VOUCHER_PREFIX, voucherCounterKey, assertBalanced, UnbalancedVoucherError,
+                   assertPeriodOpen (lock dates), postVoucher, cancelVoucher
+src/posting.ts     MODE_LEDGER, salesEntries, receiptEntries, postInvoice, postPayment, unpostInvoice,
+                   tallyPostingHook (db-kit PostingHook)
+src/reports.ts     ledgerBalance, ledgerStatement, cashBook, trialBalance, profitAndLoss, balanceSheet,
+                   dayBook, outstandingReceivables, gstSummary
+scripts/test.ts    the same scenario through db-kit's engine and tally-kit's, on MongoDB + PostgreSQL;
+                   snapshots must be identical; then trial balance per step, locks, atomicity, continuity
+```
+
+Every function keeps db-kit 1.1.0's name, signature, voucher numbers, counter keys, audit lines and
+error classes (db-kit's `NotFoundError`, `ValidationError`, `PeriodLockedError`; tally-kit's own
+`UnbalancedVoucherError`, a db-kit `ValidationError` with status 422). A database whose books were
+posted by db-kit carries on under tally-kit with no migration. **Any change of behaviour is a
+deliberate, versioned decision**: the identity test compares against db-kit, so change it on purpose
+(and say so in the PR) or not at all. tally-kit's `src/` must not import db-kit's accounting
+functions (a test enforces it); types, errors and `financialYear` come from db-kit.
 
 ## Scope
 
@@ -58,6 +81,17 @@ do **not** use or integrate with Tally software: no Tally XML, no import, no exp
    independent software, not affiliated with Tally Solutions, and confirm the final package name
    with the owner before the first release.
 8. Never commit patient data, real signatures, secrets or `.env` files.
+
+## Commands
+
+```bash
+npm run typecheck && npm test && npm run build
+npm run llms      # regenerate llms-full.txt (CI fails when it is stale)
+```
+
+`npm test` downloads MongoDB and PostgreSQL binaries on first run. Behind a proxy that blocks them, set
+`MONGOMS_SYSTEM_BINARY` to a local `mongod`. db-kit comes from GitHub Packages (scope
+`@mgpl-diagnostics` → `https://npm.pkg.github.com`, a token with `read:packages`).
 
 ## Repository rules
 
