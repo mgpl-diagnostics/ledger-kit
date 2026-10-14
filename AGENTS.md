@@ -4,10 +4,10 @@
 posting and the books reports. The approach is Tally-like (the concepts), but it is our software. We
 do **not** use or integrate with Tally software: no Tally XML, no import, no export.
 
-> **Status:** 0.1.0, not released yet. db-kit 1.1.0's `accounting.ts` and `reports.ts` are ported with
+> **Status:** 0.1.0, published to GitHub Packages. db-kit 1.1.0's `accounting.ts` and `reports.ts` are ported with
 > identical behaviour (proved by `npm test` on MongoDB and PostgreSQL); `tallyPostingHook` is the
-> PostingHook for db-kit. Next: finance-kit's `src/posting.ts` switches to tally-kit (step 4 below).
-> The package name must be confirmed with the owner before the first release (rule 7).
+> PostingHook for db-kit. finance-kit's `src/posting.ts` posts through tally-kit (step 4 below, done).
+> Next: deprecate db-kit's copy of the engine (step 5).
 
 ## Map
 
@@ -99,6 +99,7 @@ npm run llms      # regenerate llms-full.txt (CI fails when it is stale)
 - squash merge, linear history;
 - 1 code-owner review (`@BackStacked`);
 - the `ci` check is required;
-- release tags `v*` are admin-only.
+- release tags `v*` are admin-only. `publish.yml` publishes on a `v*` tag, or when the code owner runs
+  it by hand on `main` (the version in package.json). Bump the version in a PR first.
 
 Rules are applied from `mgpl-diagnostics/.github` (`scripts/protect-repos.mjs`).
