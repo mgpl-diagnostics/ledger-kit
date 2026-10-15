@@ -88,10 +88,10 @@ export async function unpostInvoice(tx: Repositories, invoiceId: Id, actorId?: I
 }
 
 /**
- * The posting hook for db-kit's billing: `createDb({ ..., posting: tallyPostingHook })`. issueInvoice,
- * recordPayment and cancelInvoice then post through tally-kit, inside their own transaction.
+ * The posting hook for db-kit's billing: `createDb({ ..., posting: ledgerPostingHook })`. issueInvoice,
+ * recordPayment and cancelInvoice then post through ledger-kit, inside their own transaction.
  */
-export const tallyPostingHook: PostingHook = {
+export const ledgerPostingHook: PostingHook = {
   async invoiceIssued(tx, invoice, actorId) {
     await postInvoice(tx, invoice, actorId);
   },
