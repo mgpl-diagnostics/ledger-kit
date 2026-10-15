@@ -1,10 +1,10 @@
 {
-  "name": "@mgpl-diagnostics/tally-kit",
+  "name": "@mgpl-diagnostics/ledger-kit",
   "version": "0.1.0",
   "description": "MGPL Diagnostics accounting engine: the 28 standard account groups, ledgers, vouchers numbered per type per financial year, double-entry posting with lock dates, automatic posting for invoices and payments (a db-kit PostingHook), and books reports (trial balance, ledger statement, cash book, day book, profit & loss, balance sheet, outstanding receivables, GST summary). Integer paise, ACID on MongoDB and PostgreSQL through db-kit. Our own software; no Tally import or export.",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
-  "repository": "github:mgpl-diagnostics/tally-kit",
+  "repository": "github:mgpl-diagnostics/ledger-kit",
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -31,13 +31,13 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx scripts/test.ts",
     "prepare": "tsup",
-    "llms": "node scripts/llms-full.mjs @mgpl-diagnostics/tally-kit README.md AGENTS.md llms.txt package.json src scripts"
+    "llms": "node scripts/llms-full.mjs @mgpl-diagnostics/ledger-kit README.md AGENTS.md llms.txt package.json src scripts"
   },
   "peerDependencies": {
-    "@mgpl-diagnostics/db-kit": "^1.1.0"
+    "@mgpl-diagnostics/db-kit": "^1.1.0 || ^2.0.0"
   },
   "devDependencies": {
-    "@mgpl-diagnostics/db-kit": "^1.1.0",
+    "@mgpl-diagnostics/db-kit": "^2.0.0",
     "@types/node": "^22.20.5",
     "embedded-postgres": "^18.4.0-beta.17",
     "mongodb-memory-server": "^11.3.0",

@@ -1,6 +1,6 @@
 <div align="center">
 
-# tally-kit
+# ledger-kit
 
 **The accounting engine of MGPL Diagnostics.**
 Account groups, ledgers and vouchers, posted by double entry, with trial balance, day book, P&L and
@@ -14,7 +14,7 @@ balance sheet. Exact to the paisa, ACID on MongoDB and PostgreSQL.
 
 ```bash
 # .npmrc: @mgpl-diagnostics:registry=https://npm.pkg.github.com (a token with read:packages)
-npm install @mgpl-diagnostics/tally-kit @mgpl-diagnostics/db-kit
+npm install @mgpl-diagnostics/ledger-kit @mgpl-diagnostics/db-kit
 ```
 
 ## What it does
@@ -24,7 +24,7 @@ npm install @mgpl-diagnostics/tally-kit @mgpl-diagnostics/db-kit
 | **Chart of accounts** | the 28 standard account groups (15 primary + 13 sub-groups) and the ledgers a lab needs on day one, seeded idempotently |
 | **Vouchers** | sales, receipt, payment, journal, contra, credit / debit note, purchase, closing. Numbered per type per financial year (`SAL/2026-27/000001`), always balanced, one-sided lines in whole paise, cancelled with the number kept |
 | **Lock dates** | posting or cancelling on or before an organisation or branch lock date fails, checked inside the posting transaction |
-| **Automatic posting** | `tallyPostingHook`: db-kit's invoices, payments, refunds and cancellations post their own vouchers |
+| **Automatic posting** | `ledgerPostingHook`: db-kit's invoices, payments, refunds and cancellations post their own vouchers |
 | **Books** | trial balance, ledger statement with running balance, cash book, day book, profit & loss (gross and net), balance sheet, outstanding receivables with ageing, GST summary; org-wide or per branch |
 
 It is a library: the backend calls it, storage lives in
@@ -35,10 +35,10 @@ It is a library: the backend calls it, storage lives in
 
 ```ts
 import { createDb } from "@mgpl-diagnostics/db-kit";
-import { tallyPostingHook, seedChartOfAccounts, postVoucher, trialBalance } from "@mgpl-diagnostics/tally-kit";
+import { ledgerPostingHook, seedChartOfAccounts, postVoucher, trialBalance } from "@mgpl-diagnostics/ledger-kit";
 
-// billing (issueInvoice, recordPayment, cancelInvoice) now posts through tally-kit
-const db = await createDb({ backend: "pg", pg: { url: process.env.DATABASE_URL! }, posting: tallyPostingHook });
+// billing (issueInvoice, recordPayment, cancelInvoice) now posts through ledger-kit
+const db = await createDb({ backend: "pg", pg: { url: process.env.DATABASE_URL! }, posting: ledgerPostingHook });
 const repos = db.repos;
 
 await seedChartOfAccounts(repos, orgId); // once per organisation
@@ -57,16 +57,16 @@ const tb = await trialBalance(repos, { orgId }); // tb.totalDebitPaise === tb.to
 ```
 
 finance-kit supplies its own hook (`financePosting`, GST by place of supply, B2B customer ledgers) and
-posts through tally-kit's `postVoucher` / `cancelVoucher`.
+posts through ledger-kit's `postVoucher` / `cancelVoucher`.
 
 ## Same books as db-kit 1.1.0
 
-tally-kit is a port of db-kit 1.1.0's `accounting.ts` and `reports.ts` with identical behaviour: the
+ledger-kit is a port of db-kit 1.1.0's `accounting.ts` and `reports.ts` with identical behaviour: the
 same function names and signatures, voucher numbers, counter keys, ledger entries, audit lines, errors
 and report figures. `npm test` runs one scenario (two financial years, two branches, every voucher
 type, every payment mode, IGST, round-off both ways, lock dates, rejected vouchers, every report)
-through db-kit's engine and through tally-kit's, on real MongoDB and real PostgreSQL, and requires the
-two sets of books to be identical. A database posted by db-kit carries on under tally-kit with no
+through db-kit's engine and through ledger-kit's, on real MongoDB and real PostgreSQL, and requires the
+two sets of books to be identical. A database posted by db-kit carries on under ledger-kit with no
 migration: the next voucher takes the next number.
 
 ## API
@@ -75,7 +75,7 @@ migration: the next voucher takes the next number.
 | --- | --- |
 | Chart | `TALLY_GROUPS`, `DEFAULT_LEDGERS`, `seedChartOfAccounts` |
 | Vouchers | `postVoucher`, `cancelVoucher`, `assertBalanced`, `assertPeriodOpen`, `VOUCHER_PREFIX`, `voucherCounterKey` |
-| Posting | `tallyPostingHook`, `postInvoice`, `postPayment`, `unpostInvoice`, `salesEntries`, `receiptEntries`, `MODE_LEDGER` |
+| Posting | `ledgerPostingHook`, `postInvoice`, `postPayment`, `unpostInvoice`, `salesEntries`, `receiptEntries`, `MODE_LEDGER` |
 | Books | `ledgerBalance`, `ledgerStatement`, `cashBook`, `trialBalance`, `profitAndLoss`, `balanceSheet`, `dayBook`, `outstandingReceivables`, `gstSummary` |
 
 Errors: `UnbalancedVoucherError` (422, a db-kit `ValidationError`), and db-kit's `ValidationError` (400),
@@ -83,7 +83,7 @@ Errors: `UnbalancedVoucherError` (422, a db-kit `ValidationError`), and db-kit's
 
 ## Not Tally
 
-tally-kit is our own, independent software. It follows the familiar Tally-style accounting concepts.
+ledger-kit is our own, independent software. It follows the familiar Tally-style accounting concepts.
 It is not affiliated with, endorsed by, or compatible with Tally Solutions or its products, and it
 does not import or export Tally data.
 

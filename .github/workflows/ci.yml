@@ -30,7 +30,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
-      - name: Tests (db-kit vs tally-kit, identical books) on MongoDB and PostgreSQL
+      - name: Tests (db-kit vs ledger-kit, identical books) on MongoDB and PostgreSQL
         run: npm test
       - run: npm run build
       - name: llms-full.txt is up to date (run `npm run llms` and commit if this fails)

@@ -1,12 +1,12 @@
-# AGENTS.md — @mgpl-diagnostics/tally-kit
+# AGENTS.md — @mgpl-diagnostics/ledger-kit
 
 **Our own accounting engine** for MGPL Diagnostics: account groups, ledgers, vouchers, double-entry
 posting and the books reports. The approach is Tally-like (the concepts), but it is our software. We
 do **not** use or integrate with Tally software: no Tally XML, no import, no export.
 
 > **Status:** 0.1.0, published to GitHub Packages. db-kit 1.1.0's `accounting.ts` and `reports.ts` are ported with
-> identical behaviour (proved by `npm test` on MongoDB and PostgreSQL); `tallyPostingHook` is the
-> PostingHook for db-kit. finance-kit's `src/posting.ts` posts through tally-kit (step 4 below, done).
+> identical behaviour (proved by `npm test` on MongoDB and PostgreSQL); `ledgerPostingHook` is the
+> PostingHook for db-kit. finance-kit's `src/posting.ts` posts through ledger-kit (step 4 below, done).
 > Next: deprecate db-kit's copy of the engine (step 5).
 
 ## Map
@@ -16,24 +16,24 @@ src/chart.ts       TALLY_GROUPS (28), DEFAULT_LEDGERS, seedChartOfAccounts
 src/vouchers.ts    VOUCHER_PREFIX, voucherCounterKey, assertBalanced, UnbalancedVoucherError,
                    assertPeriodOpen (lock dates), postVoucher, cancelVoucher
 src/posting.ts     MODE_LEDGER, salesEntries, receiptEntries, postInvoice, postPayment, unpostInvoice,
-                   tallyPostingHook (db-kit PostingHook)
+                   ledgerPostingHook (db-kit PostingHook)
 src/reports.ts     ledgerBalance, ledgerStatement, cashBook, trialBalance, profitAndLoss, balanceSheet,
                    dayBook, outstandingReceivables, gstSummary
-scripts/test.ts    the same scenario through db-kit's engine and tally-kit's, on MongoDB + PostgreSQL;
+scripts/test.ts    the same scenario through db-kit's engine and ledger-kit's, on MongoDB + PostgreSQL;
                    snapshots must be identical; then trial balance per step, locks, atomicity, continuity
 ```
 
 Every function keeps db-kit 1.1.0's name, signature, voucher numbers, counter keys, audit lines and
-error classes (db-kit's `NotFoundError`, `ValidationError`, `PeriodLockedError`; tally-kit's own
+error classes (db-kit's `NotFoundError`, `ValidationError`, `PeriodLockedError`; ledger-kit's own
 `UnbalancedVoucherError`, a db-kit `ValidationError` with status 422). A database whose books were
-posted by db-kit carries on under tally-kit with no migration. **Any change of behaviour is a
+posted by db-kit carries on under ledger-kit with no migration. **Any change of behaviour is a
 deliberate, versioned decision**: the identity test compares against db-kit, so change it on purpose
-(and say so in the PR) or not at all. tally-kit's `src/` must not import db-kit's accounting
+(and say so in the PR) or not at all. ledger-kit's `src/` must not import db-kit's accounting
 functions (a test enforces it); types, errors and `financialYear` come from db-kit.
 
 ## Scope
 
-| tally-kit owns | It does not own |
+| ledger-kit owns | It does not own |
 | --- | --- |
 | Chart of accounts: the 28 standard groups (15 primary + 13 sub-groups), ledgers, opening balances | **Storage**: every table and collection lives in **db-kit** (MongoDB + PostgreSQL, ACID) |
 | Vouchers: sales, receipt, payment, journal, contra, credit note, debit note, purchase, closing. Numbering per type per financial year; balanced-entry validation; cancel | GST rules, receivables, partner settlements, cash/bank, lock dates, year-end close: **finance-kit** |
@@ -52,13 +52,13 @@ functions (a test enforces it); types, errors and `financialYear` come from db-k
      invoiceCancelled(tx: Repositories, invoiceId: string, actorId?: string): Promise<void>;
    }
    ```
-3. tally-kit:
+3. ledger-kit:
    - ports that logic in, with **identical behaviour** (same voucher numbers, same entries; prove it
      with tests);
-   - exports `tallyPostingHook` for db-kit;
+   - exports `ledgerPostingHook` for db-kit;
    - exports the posting and report functions finance-kit needs.
-4. finance-kit's `src/posting.ts` switches from db-kit's functions to tally-kit's (one file).
-5. Only after that, deprecate the accounting functions in db-kit (re-export from tally-kit or
+4. finance-kit's `src/posting.ts` switches from db-kit's functions to ledger-kit's (one file).
+5. Only after that, deprecate the accounting functions in db-kit (re-export from ledger-kit or
    remove them in a major version).
 
 ## Rules

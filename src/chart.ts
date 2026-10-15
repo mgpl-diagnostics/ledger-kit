@@ -5,7 +5,7 @@ import type { AccountGroup, AccountNature, Id, Ledger, Repositories } from "@mgp
  *
  * The 28 standard groups (15 primary + 13 sub-groups) and the ledgers a diagnostic lab needs on day
  * one. Names, parents and system keys are the ones db-kit 1.1.0 seeds, so books started with db-kit
- * carry on unchanged under tally-kit.
+ * carry on unchanged under ledger-kit.
  */
 
 export interface GroupDef {

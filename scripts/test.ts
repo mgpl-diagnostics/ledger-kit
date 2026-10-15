@@ -1,12 +1,12 @@
-// npm test — tally-kit on real MongoDB (single-node replica set) and real PostgreSQL, both started
+// npm test — ledger-kit on real MongoDB (single-node replica set) and real PostgreSQL, both started
 // in-process, through db-kit's repositories.
 //
 // The same scenario runs twice on each database, into two fresh databases: once with db-kit 1.1.0's
-// accounting (its default posting and its functions), once with tally-kit's (tallyPostingHook and
-// tally-kit's functions). Every voucher, ledger entry, audit line, error and report is snapshotted with
-// ids replaced by names; the two snapshots must be identical. Then tally-kit-only checks: the trial
+// accounting (its default posting and its functions), once with ledger-kit's (ledgerPostingHook and
+// ledger-kit's functions). Every voucher, ledger entry, audit line, error and report is snapshotted with
+// ids replaced by names; the two snapshots must be identical. Then ledger-kit-only checks: the trial
 // balance after every step, lock dates under concurrency, atomicity, carrying on a db-kit series, and
-// the engine boundary (tally-kit must not call db-kit's accounting).
+// the engine boundary (ledger-kit must not call db-kit's accounting).
 //
 // Fictional organisation and people only.
 import { readdirSync, readFileSync, rmSync } from "node:fs";
@@ -20,7 +20,7 @@ import {
   cancelInvoice, ConflictError, createDb, issueInvoice, NotFoundError, PeriodLockedError, recordPayment, registerPatient, seedOrganization,
   ValidationError, type Backend, type Db, type Id, type PostingHook, type Repositories,
 } from "@mgpl-diagnostics/db-kit";
-import * as tally from "../src/index";
+import * as ledger from "../src/index";
 
 let failed = 0;
 let passed = 0;
@@ -44,26 +44,26 @@ const EVER = { from: at("2020-01-01"), to: new Date(START + 365 * 86400000) };
 
 /** Everything the scenario calls on an accounting engine. */
 interface Engine {
-  name: "db-kit" | "tally-kit";
+  name: "db-kit" | "ledger-kit";
   /** The posting hook billing uses (undefined = db-kit's default). */
   hook?: PostingHook;
-  seedChartOfAccounts: typeof tally.seedChartOfAccounts;
-  postVoucher: typeof tally.postVoucher;
-  cancelVoucher: typeof tally.cancelVoucher;
-  postInvoice: typeof tally.postInvoice;
-  postPayment: typeof tally.postPayment;
-  assertBalanced: typeof tally.assertBalanced;
-  salesEntries: typeof tally.salesEntries;
-  receiptEntries: typeof tally.receiptEntries;
-  ledgerBalance: typeof tally.ledgerBalance;
-  ledgerStatement: typeof tally.ledgerStatement;
-  cashBook: typeof tally.cashBook;
-  trialBalance: typeof tally.trialBalance;
-  profitAndLoss: typeof tally.profitAndLoss;
-  balanceSheet: typeof tally.balanceSheet;
-  dayBook: typeof tally.dayBook;
-  outstandingReceivables: typeof tally.outstandingReceivables;
-  gstSummary: typeof tally.gstSummary;
+  seedChartOfAccounts: typeof ledger.seedChartOfAccounts;
+  postVoucher: typeof ledger.postVoucher;
+  cancelVoucher: typeof ledger.cancelVoucher;
+  postInvoice: typeof ledger.postInvoice;
+  postPayment: typeof ledger.postPayment;
+  assertBalanced: typeof ledger.assertBalanced;
+  salesEntries: typeof ledger.salesEntries;
+  receiptEntries: typeof ledger.receiptEntries;
+  ledgerBalance: typeof ledger.ledgerBalance;
+  ledgerStatement: typeof ledger.ledgerStatement;
+  cashBook: typeof ledger.cashBook;
+  trialBalance: typeof ledger.trialBalance;
+  profitAndLoss: typeof ledger.profitAndLoss;
+  balanceSheet: typeof ledger.balanceSheet;
+  dayBook: typeof ledger.dayBook;
+  outstandingReceivables: typeof ledger.outstandingReceivables;
+  gstSummary: typeof ledger.gstSummary;
   constants: unknown;
 }
 
@@ -78,15 +78,15 @@ const DBKIT: Engine = {
   constants: { groups: dbkit.TALLY_GROUPS, ledgers: dbkit.DEFAULT_LEDGERS, prefix: dbkit.VOUCHER_PREFIX, key: dbkit.voucherCounterKey("o", "sales", "2026-27") },
 };
 
-const TALLY: Engine = {
-  name: "tally-kit", hook: tally.tallyPostingHook,
-  seedChartOfAccounts: tally.seedChartOfAccounts, postVoucher: tally.postVoucher, cancelVoucher: tally.cancelVoucher,
-  postInvoice: tally.postInvoice, postPayment: tally.postPayment, assertBalanced: tally.assertBalanced,
-  salesEntries: tally.salesEntries, receiptEntries: tally.receiptEntries,
-  ledgerBalance: tally.ledgerBalance, ledgerStatement: tally.ledgerStatement, cashBook: tally.cashBook, trialBalance: tally.trialBalance,
-  profitAndLoss: tally.profitAndLoss, balanceSheet: tally.balanceSheet, dayBook: tally.dayBook,
-  outstandingReceivables: tally.outstandingReceivables, gstSummary: tally.gstSummary,
-  constants: { groups: tally.TALLY_GROUPS, ledgers: tally.DEFAULT_LEDGERS, prefix: tally.VOUCHER_PREFIX, key: tally.voucherCounterKey("o", "sales", "2026-27") },
+const LEDGER: Engine = {
+  name: "ledger-kit", hook: ledger.ledgerPostingHook,
+  seedChartOfAccounts: ledger.seedChartOfAccounts, postVoucher: ledger.postVoucher, cancelVoucher: ledger.cancelVoucher,
+  postInvoice: ledger.postInvoice, postPayment: ledger.postPayment, assertBalanced: ledger.assertBalanced,
+  salesEntries: ledger.salesEntries, receiptEntries: ledger.receiptEntries,
+  ledgerBalance: ledger.ledgerBalance, ledgerStatement: ledger.ledgerStatement, cashBook: ledger.cashBook, trialBalance: ledger.trialBalance,
+  profitAndLoss: ledger.profitAndLoss, balanceSheet: ledger.balanceSheet, dayBook: ledger.dayBook,
+  outstandingReceivables: ledger.outstandingReceivables, gstSummary: ledger.gstSummary,
+  constants: { groups: ledger.TALLY_GROUPS, ledgers: ledger.DEFAULT_LEDGERS, prefix: ledger.VOUCHER_PREFIX, key: ledger.voucherCounterKey("o", "sales", "2026-27") },
 };
 
 // ------------------------------------------------------------------ the scenario
@@ -192,7 +192,7 @@ async function scenario(r: Repositories, e: Engine, step: (label: string, orgId:
   snap.invoices = [inv1, inv2, inv3, inv4, inv5, inv6].map((x) => x.invoice.invoiceNo);
 
   // manual vouchers of every type
-  const jv = (type: tally.VoucherInput["type"], date: Date, dr: string, cr: string, paise: number, branchId: Id = rpr.id, narration?: string) =>
+  const jv = (type: ledger.VoucherInput["type"], date: Date, dr: string, cr: string, paise: number, branchId: Id = rpr.id, narration?: string) =>
     e.postVoucher(r, { orgId, branchId, type, date, narration, entries: [{ ledgerId: L[dr]!, debitPaise: paise, creditPaise: 0 }, { ledgerId: L[cr]!, debitPaise: 0, creditPaise: paise }] }, owner.id);
   await jv("receipt", at("2026-03-01"), "cash", "capital", 1000000, rpr.id, "Capital introduced");
   await jv("contra", at("2026-03-02"), "bank", "cash", 400000, rpr.id, "Cash deposited");
@@ -212,7 +212,7 @@ async function scenario(r: Repositories, e: Engine, step: (label: string, orgId:
   await step("manual vouchers of every type", orgId);
 
   // rejected vouchers
-  const bad = (entries: tally.VoucherInput["entries"]) => outcome(e.postVoucher(r, { orgId, branchId: rpr.id, type: "journal", date: at("2026-04-09"), entries }));
+  const bad = (entries: ledger.VoucherInput["entries"]) => outcome(e.postVoucher(r, { orgId, branchId: rpr.id, type: "journal", date: at("2026-04-09"), entries }));
   snap.rejected = {
     unbalanced: await bad([{ ledgerId: L.cash!, debitPaise: 100, creditPaise: 0 }, { ledgerId: L.bank!, debitPaise: 0, creditPaise: 90 }]),
     oneLine: await bad([{ ledgerId: L.cash!, debitPaise: 100, creditPaise: 0 }]),
@@ -221,7 +221,7 @@ async function scenario(r: Repositories, e: Engine, step: (label: string, orgId:
     unknownLedger: await bad([{ ledgerId: L.cash!, debitPaise: 100, creditPaise: 0 }, { ledgerId: "00000000-0000-4000-8000-000000000001", debitPaise: 0, creditPaise: 100 }]),
     unknownVoucher: await outcome(e.cancelVoucher(r, "00000000-0000-4000-8000-000000000002")),
   };
-  snap.countersAfterRejects = await r.counters.peek(tally.voucherCounterKey(orgId, "journal", "2026-27"));
+  snap.countersAfterRejects = await r.counters.peek(ledger.voucherCounterKey(orgId, "journal", "2026-27"));
   await step("rejected vouchers leave nothing behind", orgId);
 
   // lock dates: branch lock, then org lock
@@ -348,16 +348,16 @@ type Open = (name: string, posting?: PostingHook) => Promise<Db>;
 async function backendSuite(backend: Backend, open: Open) {
   const tag = `[${backend}]`;
 
-  // 1. identical behaviour: db-kit's engine and tally-kit's on fresh databases, same scenario
-  console.log(`\n${tag} identical behaviour: db-kit 1.1.0 accounting vs tally-kit`);
+  // 1. identical behaviour: db-kit's engine and ledger-kit's on fresh databases, same scenario
+  console.log(`\n${tag} identical behaviour: db-kit 1.1.0 accounting vs ledger-kit`);
   const snaps: Record<string, unknown> = {};
-  for (const e of [DBKIT, TALLY]) {
-    const db = await open(e.name === "db-kit" ? "books_dbkit" : "books_tally", e.hook);
+  for (const e of [DBKIT, LEDGER]) {
+    const db = await open(e.name === "db-kit" ? "books_dbkit" : "books_ledger", e.hook);
     const r = db.rawRepos;
     const step = async (label: string, orgId: Id) => {
       const tb = await e.trialBalance(r, { orgId });
       const bs = await e.balanceSheet(r, { orgId, asOf: EVER.to });
-      if (e.name === "tally-kit")
+      if (e.name === "ledger-kit")
         ok(tb.differencePaise === 0 && tb.totalDebitPaise === tb.totalCreditPaise && bs.differencePaise === 0, `${tag} trial balance and balance sheet balance after: ${label} (Dr ${tb.totalDebitPaise} = Cr ${tb.totalCreditPaise})`);
     };
     const raw = await scenario(r, e, step);
@@ -368,7 +368,7 @@ async function backendSuite(backend: Backend, open: Open) {
     await db.close();
   }
   const a = snaps["db-kit"] as Snapshot;
-  const b = snaps["tally-kit"] as Snapshot;
+  const b = snaps["ledger-kit"] as Snapshot;
   ok(!JSON.stringify(b).includes("UNKNOWN-ID"), `${tag} every id in the snapshot maps to a name`);
   for (const k of Object.keys(a)) {
     const d = firstDiff(a[k], b[k], k);
@@ -387,42 +387,42 @@ async function backendSuite(backend: Backend, open: Open) {
   ok((b.branchLock as any).onLockDay.error === "PeriodLockedError" && (b.branchLock as any).otherBranch.ok, `${tag} lock dates refuse the locked branch only`);
   ok((b.withoutChart as any).vouchers === 0 && (b.withoutChart as any).postInvoice === null, `${tag} no chart of accounts: nothing posted`);
 
-  // 2. tally-kit carries on a series db-kit started (same counters, same numbers)
-  console.log(`${tag} switching an existing database from db-kit to tally-kit`);
-  const old = await open("books_dbkit", tally.tallyPostingHook);
+  // 2. ledger-kit carries on a series db-kit started (same counters, same numbers)
+  console.log(`${tag} switching an existing database from db-kit to ledger-kit`);
+  const old = await open("books_dbkit", ledger.ledgerPostingHook);
   const r = old.rawRepos;
   const org = (await r.orgs.findOne({ code: "SUN" }))!;
   const rpr = (await r.branches.findOne({ orgId: org.id, code: "RPR01" }))!;
   const cash = (await r.ledgers.findBySystemKey(org.id, "cash"))!;
   const capital = (await r.ledgers.findBySystemKey(org.id, "capital"))!;
   const lastJrn = (await r.vouchers.find({ orgId: org.id, type: "journal" })).map((x) => x.voucherNo).filter((n) => n.startsWith("JRN/2026-27/")).sort().at(-1)!;
-  const next = await tally.postVoucher(r, { orgId: org.id, branchId: rpr.id, type: "journal", date: at("2026-05-01"), entries: [{ ledgerId: cash.id, debitPaise: 100, creditPaise: 0 }, { ledgerId: capital.id, debitPaise: 0, creditPaise: 100 }] });
-  ok(Number(next.voucherNo.slice(-6)) === Number(lastJrn.slice(-6)) + 1, `${tag} tally-kit continues db-kit's series: ${lastJrn} → ${next.voucherNo}`);
+  const next = await ledger.postVoucher(r, { orgId: org.id, branchId: rpr.id, type: "journal", date: at("2026-05-01"), entries: [{ ledgerId: cash.id, debitPaise: 100, creditPaise: 0 }, { ledgerId: capital.id, debitPaise: 0, creditPaise: 100 }] });
+  ok(Number(next.voucherNo.slice(-6)) === Number(lastJrn.slice(-6)) + 1, `${tag} ledger-kit continues db-kit's series: ${lastJrn} → ${next.voucherNo}`);
   const patient = (await r.patients.find({ orgId: org.id }))[0]!;
   const lastSal = (await r.vouchers.find({ orgId: org.id, type: "sales" })).map((x) => x.voucherNo).filter((n) => n.startsWith("SAL/2026-27/")).sort().at(-1)!;
   const inv = await issueInvoice(r, { orgId: org.id, branchId: rpr.id, patientId: patient.id, date: at("2026-05-02"), items: [{ name: "ESR", ratePaise: 9900 }], payments: [{ amountPaise: 9900, mode: "upi" }] });
   const sal = (await r.vouchers.find({ invoiceId: inv.invoice.id } as any)).map((x) => x.voucherNo).sort();
-  ok(sal.includes(`SAL/2026-27/${String(Number(lastSal.slice(-6)) + 1).padStart(6, "0")}`) && sal.some((n) => n.startsWith("RCT/")), `${tag} tallyPostingHook posts the next sales and receipt vouchers (${sal.join(", ")})`);
+  ok(sal.includes(`SAL/2026-27/${String(Number(lastSal.slice(-6)) + 1).padStart(6, "0")}`) && sal.some((n) => n.startsWith("RCT/")), `${tag} ledgerPostingHook posts the next sales and receipt vouchers (${sal.join(", ")})`);
   await dbkit.cancelVoucher(r, next.id);
-  ok((await tally.trialBalance(r, { orgId: org.id })).differencePaise === 0 && (await dbkit.trialBalance(r, { orgId: org.id })).totalDebitPaise === (await tally.trialBalance(r, { orgId: org.id })).totalDebitPaise, `${tag} mixed history: both engines read the same balanced books`);
+  ok((await ledger.trialBalance(r, { orgId: org.id })).differencePaise === 0 && (await dbkit.trialBalance(r, { orgId: org.id })).totalDebitPaise === (await ledger.trialBalance(r, { orgId: org.id })).totalDebitPaise, `${tag} mixed history: both engines read the same balanced books`);
 
-  // 3. tallyPostingHook runs inside billing's transaction: a failure rolls the invoice back
+  // 3. ledgerPostingHook runs inside billing's transaction: a failure rolls the invoice back
   const invoicesBefore = await r.invoices.count({ orgId: org.id });
   const vouchersBefore = await r.vouchers.count({ orgId: org.id });
   const failing = await open("books_dbkit", {
-    ...tally.tallyPostingHook,
-    async paymentRecorded(tx, p, no, a) { await tally.tallyPostingHook.paymentRecorded(tx, p, no, a); throw new ConflictError("posting failed"); },
+    ...ledger.ledgerPostingHook,
+    async paymentRecorded(tx, p, no, a) { await ledger.ledgerPostingHook.paymentRecorded(tx, p, no, a); throw new ConflictError("posting failed"); },
   });
   await rejects(issueInvoice(failing.rawRepos, { orgId: org.id, branchId: rpr.id, patientId: patient.id, date: at("2026-05-03"), items: [{ name: "ESR", ratePaise: 9900 }], payments: [{ amountPaise: 100, mode: "cash" }] }), ConflictError, `${tag} a failing hook fails the invoice`);
   ok((await r.invoices.count({ orgId: org.id })) === invoicesBefore && (await r.vouchers.count({ orgId: org.id })) === vouchersBefore, `${tag} …and rolls back the invoice and its vouchers`);
   await failing.close();
 
   // 4. atomicity: a voucher posted inside a failing transaction leaves no voucher, entry or number
-  const key = tally.voucherCounterKey(org.id, "journal", "2026-27");
+  const key = ledger.voucherCounterKey(org.id, "journal", "2026-27");
   const seq = await r.counters.peek(key);
   const entries = (await r.ledgerEntries.list({ orgId: org.id })).length;
   await rejects(r.transaction(async (tx) => {
-    await tally.postVoucher(tx, { orgId: org.id, branchId: rpr.id, type: "journal", date: at("2026-05-04"), entries: [{ ledgerId: cash.id, debitPaise: 100, creditPaise: 0 }, { ledgerId: capital.id, debitPaise: 0, creditPaise: 100 }] });
+    await ledger.postVoucher(tx, { orgId: org.id, branchId: rpr.id, type: "journal", date: at("2026-05-04"), entries: [{ ledgerId: cash.id, debitPaise: 100, creditPaise: 0 }, { ledgerId: capital.id, debitPaise: 0, creditPaise: 100 }] });
     throw new ConflictError("boom");
   }), ConflictError, `${tag} error after postVoucher inside a transaction propagates`);
   ok((await r.counters.peek(key)) === seq && (await r.ledgerEntries.list({ orgId: org.id })).length === entries, `${tag} rollback: no voucher number used, no ledger entries`);
@@ -437,20 +437,20 @@ async function backendSuite(backend: Backend, open: Open) {
     await tx.periodLocks.update(l!.id, { lockedUpTo: at("2026-05-31", "23:59") });
   });
   await holding;
-  await rejects(tally.postVoucher(r, { orgId: org.id, branchId: rpr.id, type: "journal", date: at("2026-05-20"), entries: [{ ledgerId: cash.id, debitPaise: 100, creditPaise: 0 }, { ledgerId: capital.id, debitPaise: 0, creditPaise: 100 }] }), PeriodLockedError, `${tag} concurrent lock change: the in-flight posting waits, then fails`);
+  await rejects(ledger.postVoucher(r, { orgId: org.id, branchId: rpr.id, type: "journal", date: at("2026-05-20"), entries: [{ ledgerId: cash.id, debitPaise: 100, creditPaise: 0 }, { ledgerId: capital.id, debitPaise: 0, creditPaise: 100 }] }), PeriodLockedError, `${tag} concurrent lock change: the in-flight posting waits, then fails`);
   await mover;
   const mayInvoiceVoucher = (await r.vouchers.find({ invoiceId: inv.invoice.id, type: "sales" } as any))[0]!;
-  await rejects(tally.cancelVoucher(r, mayInvoiceVoucher.id), PeriodLockedError, `${tag} cancelling a voucher in the locked period fails`);
+  await rejects(ledger.cancelVoucher(r, mayInvoiceVoucher.id), PeriodLockedError, `${tag} cancelling a voucher in the locked period fails`);
   await r.transaction(async (tx) => {
     for (const l of await tx.periodLocks.hold(org.id, ["org"], "update")) await tx.periodLocks.update(l.id, { lockedUpTo: null });
   });
-  ok((await tally.trialBalance(r, { orgId: org.id })).differencePaise === 0, `${tag} books balance at the end`);
+  ok((await ledger.trialBalance(r, { orgId: org.id })).differencePaise === 0, `${tag} books balance at the end`);
   await old.close();
 }
 
 // ------------------------------------------------------------------ engine boundary
 
-/** tally-kit is a port, not a wrapper: its source must not call db-kit's accounting functions. */
+/** ledger-kit is a port, not a wrapper: its source must not call db-kit's accounting functions. */
 function engineBoundary() {
   console.log("\n[engine boundary]");
   const engine = /\b(postVoucher|cancelVoucher|seedChartOfAccounts|postInvoice|postPayment|unpostInvoice|assertBalanced|assertPeriodOpen|salesEntries|receiptEntries|defaultPostingHook|trialBalance|profitAndLoss|balanceSheet|ledgerStatement|ledgerBalance|dayBook|cashBook|gstSummary|outstandingReceivables|TALLY_GROUPS|DEFAULT_LEDGERS|VOUCHER_PREFIX|voucherCounterKey|UnbalancedVoucherError)\b/;
@@ -460,11 +460,11 @@ function engineBoundary() {
     if (imports.some((i) => engine.test(i))) offenders.push(f);
   }
   ok(offenders.length === 0, `src/ imports no accounting function from db-kit${offenders.length ? ` (offenders: ${offenders.join(", ")})` : ""}`);
-  const exported = Object.keys(tally);
-  const wanted = ["seedChartOfAccounts", "postVoucher", "cancelVoucher", "assertBalanced", "assertPeriodOpen", "postInvoice", "postPayment", "unpostInvoice", "tallyPostingHook",
+  const exported = Object.keys(ledger);
+  const wanted = ["seedChartOfAccounts", "postVoucher", "cancelVoucher", "assertBalanced", "assertPeriodOpen", "postInvoice", "postPayment", "unpostInvoice", "ledgerPostingHook",
     "trialBalance", "ledgerBalance", "ledgerStatement", "cashBook", "dayBook", "profitAndLoss", "balanceSheet", "outstandingReceivables", "gstSummary", "UnbalancedVoucherError"];
   ok(wanted.every((w) => exported.includes(w)), `exports what finance-kit and db-kit need (${wanted.length} names)`);
-  ok(tally.UnbalancedVoucherError.prototype instanceof ValidationError && new tally.UnbalancedVoucherError(1, 2).statusCode === 422, "UnbalancedVoucherError is a db-kit ValidationError (422)");
+  ok(ledger.UnbalancedVoucherError.prototype instanceof ValidationError && new ledger.UnbalancedVoucherError(1, 2).statusCode === 422, "UnbalancedVoucherError is a db-kit ValidationError (422)");
 }
 
 // ------------------------------------------------------------------ main
@@ -476,7 +476,7 @@ async function main() {
   await backendSuite("mongo", (name, posting) => createDb({ backend: "mongo", mongo: { uri: rs.getUri(name) }, posting }));
   await rs.stop();
 
-  const dir = join(tmpdir(), `tally-kit-pg-${process.pid}`);
+  const dir = join(tmpdir(), `ledger-kit-pg-${process.pid}`);
   rmSync(dir, { recursive: true, force: true });
   const pg = new EmbeddedPostgres({ databaseDir: dir, user: "postgres", password: "postgres", port: 54333, persistent: false });
   await pg.initialise();
